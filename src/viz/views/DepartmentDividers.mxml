@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+           xmlns:framework="viz.framework.*"
+           creationComplete="onComplete()"
+           clipContent="false" width="0" height="0">
+
+
+    <mx:Script>
+        <![CDATA[
+            import flash.events.Event;
+
+            import mx.collections.XMLListCollection;
+
+            import caurina.transitions.Tweener;
+            
+            import viz.data.ApplicationDataModel;
+            import viz.events.SelectStudioEvent;
+
+
+            /***********************************
+             ** VARIABLES
+             ***********************************/
+            private var _dividers:Array = [];
+
+
+            /***********************************
+             ** CONSTRUCTOR
+             ***********************************/
+            private function onComplete():void {
+                ApplicationDataModel.getInstance().addEventListener(ApplicationDataModel.DATA_READY,
+                                                                    initDividers);
+                ApplicationDataModel.getInstance().addEventListener(SelectStudioEvent.SELECT_STUDIO,
+                                                                    onSelectStudio);
+
+            }
+
+
+            /***********************************
+             ** GETTERS/SETTERS
+             ***********************************/
+            override public function set data(o:Object):void {
+                super.data = o;
+                initDividers();
+            }
+
+            /***********************************
+             ** PUBLIC
+             ***********************************/
+            public function show(delay:Number):void {
+                var count:Number = 0;
+                for each (var div:DepartmentDivider in _dividers) {
+                    div.alpha = 0;
+                    div.visible = true;
+
+                    Tweener.addTween(div, {time: .5,
+                                                      alpha: 1,
+                                                      transition: "easeOutCubic",
+                                                      delay: delay + (count * .05)});
+                    count++;
+                }
+            }
+
+            /***********************************
+             ** PRIVATE
+             ***********************************/
+            private function initDividers(e:Event = null):void {
+                var deptData:XMLListCollection = 
+                    ApplicationDataModel.getInstance().departmentData;
+                var angleStep:Number = 
+                    ApplicationDataModel.getInstance().angleStep * 180/Math.PI;
+                var delay:Number = 
+                    ApplicationDataModel.getInstance().studioData.length * .37;
+                var currAngle:Number = -90;
+                var count:Number = 0;
+
+                for each (var deptXML:XML in deptData) {
+                    var div:DepartmentDivider = new DepartmentDivider();
+                    div.alpha = 0;
+                    div.data = deptXML;
+                    div.width = //dividerLength = 
+                        WhoDev.MAX_STUDIO_RADIUS + DepartmentDivider.DEFAULT_LENGTH_EXTENSION;
+                    div.rotation = currAngle;                
+                    //rawChildren.addChild(div);
+                    addChild(div);
+                    _dividers.push(div);
+
+                    Tweener.addTween(div, {time: .5,
+                                           alpha: 1,
+                                           transition: "easeOutCubic",
+                                           delay: delay + (count * .05)});
+                    currAngle += deptXML.max * angleStep;
+                    count++;
+                }
+            }
+
+            //-----------
+            private function onSelectStudio(e:SelectStudioEvent):void {
+                var radius:Number;
+                var currAngle:Number;
+                var newAngle:Number;
+                var appModel:ApplicationDataModel = ApplicationDataModel.getInstance();
+                var deptData:XMLListCollection = appModel.departmentData;
+
+                if (e.studioCode == SelectStudioEvent.NO_STUDIO_SELECTED) {
+                    radius = WhoDev.MAX_STUDIO_RADIUS;
+                    currAngle = -Math.PI/2;
+                    for (var i:int = 0; i < _dividers.length; i++) {
+                        newAngle = calcAngle(currAngle * 180/Math.PI, 
+                                             _dividers[i].rotation);
+                        _dividers[i].showPercent(newAngle, true, 0);
+                        Tweener.addTween(_dividers[i], {width: radius + DepartmentDivider.DEFAULT_LENGTH_EXTENSION,
+                                                        lengthExtension: DepartmentDivider.DEFAULT_LENGTH_EXTENSION,
+                                                        labelGap: DepartmentDivider.DEFAULT_LABEL_BUFFER,
+                                                        time: .5,
+                                                        transition: "easeInOutQuad"});
+
+                        currAngle += deptData[i].max * appModel.angleStep;
+                    }
+
+                } else {
+                    var studioFrogs:XMLListCollection = 
+                        new XMLListCollection(appModel.frogData.source.(studio == e.studioCode));                
+                    var angleStep:Number = (Math.PI * 2)/studioFrogs.length;
+                    radius = (appModel.maxStudioCount * 13)/(2 * Math.PI);
+                    var count:Number = 0;
+                    var deptCode:String;
+                    var deptCount:Number;
+                    currAngle = -Math.PI/2;
+                    for each (var deptXML:XML in deptData) {
+                        deptCode = deptXML.code;
+                        deptCount = studioFrogs.source.(department == deptCode).length();
+                        newAngle = calcAngle(currAngle * 180/Math.PI,
+                                             _dividers[count].rotation);
+                        _dividers[count].showPercent(newAngle, deptCount > 0,
+                                                     e.prevCode != SelectStudioEvent.NO_STUDIO_SELECTED ? 0 : .5);
+                        Tweener.addTween(_dividers[count], {width: radius + DepartmentDivider.ZOOM_LENGTH_EXTENSION, 
+                                                            lengthExtension: DepartmentDivider.ZOOM_LENGTH_EXTENSION,
+                                                            labelGap: DepartmentDivider.ZOOM_LABEL_BUFFER,
+                                                            time: .5, 
+                                                            delay: .5,
+                                                            transition: "easeInOutQuad"});                                        
+                        currAngle += deptCount * angleStep;
+                        count++;
+
+                    }
+                }
+            }
+
+            private function calcAngle(angle:Number, currAngle:Number):Number {
+                var newAngle:Number = angle;
+                if (newAngle > 180) {
+                    newAngle -= 360;
+                }
+                if (currAngle > 0 && newAngle < 0) {
+                    newAngle += 360;
+                } else if (currAngle < 0 && newAngle > 0) {
+                    newAngle -= 360;
+                }
+
+                return newAngle;
+            }
+        ]]>
+    </mx:Script>
+
+</mx:Canvas>

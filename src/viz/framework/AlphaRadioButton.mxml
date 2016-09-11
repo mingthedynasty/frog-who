@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:RadioButton xmlns:mx="http://www.adobe.com/2006/mxml"
+                styleName="alphaRadioButtonStyle" alpha=".6"
+                valueCommit="updateAlpha()" creationComplete="buttonMode = true;">
+    
+    
+    <mx:Style>
+        .alphaRadioButtonStyle {
+              color: #FFFFFF;
+              textRollOverColor: #FFFFFF;
+              textSelectedColor: #FFFFFF;
+              fontFamily: benton;
+              fontSize: 13;
+              fontWeight: normal;
+              fontAntiAliasType: advanced;
+              fontSharpness: 100;
+              upIcon: ClassReference("mx.skins.ProgrammaticSkin");
+              overIcon: ClassReference("mx.skins.ProgrammaticSkin");
+              downIcon: ClassReference("mx.skins.ProgrammaticSkin");
+              disabledIcon: ClassReference("mx.skins.ProgrammaticSkin");
+              selectedUpIcon: ClassReference("mx.skins.ProgrammaticSkin");
+              selectedOverIcon: ClassReference("mx.skins.ProgrammaticSkin");
+              selectedDownIcon: ClassReference("mx.skins.ProgrammaticSkin");
+              selectedDisabledIcon: ClassReference("mx.skins.ProgrammaticSkin");
+              upAlpha: .7;
+              overAlpha: 1;
+              selectedAlpha: 1;
+          }
+    </mx:Style>
+
+    <mx:Metadata>
+        [Style(name="upAlpha",type="Number",inherit="yes")]
+        [Style(name="overAlpha",type="Number",inherit="yes")]
+        [Style(name="selectedAlpha",type="Number",inherit="yes")]
+    </mx:Metadata>
+
+    <mx:Script>
+        <![CDATA[
+
+            import flash.text.AntiAliasType;
+
+            import caurina.transitions.Tweener;
+
+
+            /***********************************
+             ** VARIABLES
+             ***********************************/
+            private var _mouseOver:Boolean = false;
+            private var _alphaChanged:Boolean = false;
+
+            /***********************************
+             ** PUBLIC
+             ***********************************/
+            override public function styleChanged(prop:String):void {
+                super.styleChanged(prop);
+                if (prop == "upAlpha" ||
+                    prop == "overAlpha" ||
+                    prop == "selectedAlpha") {
+                    _alphaChanged = true;
+                    invalidateProperties();
+                }
+            }
+
+
+
+            /***********************************
+             ** PROTECTED
+             ***********************************/
+            override protected function rollOverHandler(e:MouseEvent):void {
+                super.rollOverHandler(e);
+                _mouseOver = true;
+                updateAlpha();
+            }
+
+            override protected function rollOutHandler(e:MouseEvent):void {
+                super.rollOutHandler(e);
+                _mouseOver = false;
+                updateAlpha();
+            }
+            
+            //-----------
+            override protected function commitProperties():void {
+                super.commitProperties();
+                if (_alphaChanged) {
+                    updateAlpha();
+                }
+            }
+
+
+            /***********************************
+             ** PRIVATE
+             ***********************************/
+            private function updateAlpha():void {
+                var targetAlpha:Number = 0;
+                var time:Number = .4;
+                if (selected) {
+                    targetAlpha = getStyle("selectedAlpha");
+                } else if (_mouseOver) {
+                    targetAlpha = getStyle("overAlpha");
+                } else {
+                    targetAlpha = getStyle("upAlpha");
+                    time = 1;
+                }
+
+                if (targetAlpha != alpha) {
+                    Tweener.addTween(this, {alpha: targetAlpha,
+                                            time: time});
+                }
+                _alphaChanged = false;
+            }
+
+        ]]>
+    </mx:Script>
+</mx:RadioButton>

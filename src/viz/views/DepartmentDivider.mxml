@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+           verticalScrollPolicy="off" horizontalScrollPolicy="off"
+           clipContent="false"
+           creationComplete="onComplete()">
+
+
+    <mx:Script>
+        <![CDATA[
+
+            import caurina.transitions.Tweener;
+
+
+            /***********************************
+             ** VARIABLES
+             ***********************************/
+            private var _labelBuffer:Number = 7;
+            private var _lengthExtension:Number;
+
+            //-----------
+            public static const DEFAULT_LENGTH_EXTENSION:Number = 70;
+            public static const ZOOM_LENGTH_EXTENSION:Number = 90;
+
+            public static const DEFAULT_LABEL_BUFFER:Number = 7;
+            public static const ZOOM_LABEL_BUFFER:Number = 16;
+
+
+
+            /***********************************
+             ** CONSTRUCTOR
+             ***********************************/
+            private function onComplete():void {
+                _labelBuffer = DEFAULT_LABEL_BUFFER;
+                _lengthExtension = DEFAULT_LENGTH_EXTENSION;
+
+                if (data) {
+                    deptLabel.text = data.display.toUpperCase();            
+                    invalidateDisplayList();
+                }
+
+                Tweener.registerSpecialProperty("labelGap", 
+                                                getLabelGap, 
+                                                setLabelGap);
+                Tweener.registerSpecialProperty("lengthExtension", 
+                                                getLengthExtension, 
+                                                setLengthExtension);
+            }
+
+            /***********************************
+             ** GETTERS/SETTERS
+             ***********************************/
+            override public function set data(o:Object):void {
+                super.data = o;
+
+                if (deptLabel) {
+                    deptLabel.text = data.display.toUpperCase();            
+                    invalidateDisplayList();
+                }
+            }
+
+            override public function set rotation(r:Number):void {
+                super.rotation = r; 
+                invalidateDisplayList();
+            }
+
+
+            /***********************************
+             ** PUBLIC
+             ***********************************/
+            public function showPercent(angle:Number, hasPercent:Boolean, delay:Number):void {
+                Tweener.addTween(this, {rotation:  angle,
+                                        time: .5,
+                                        transition: "easeInOutQuad",
+                                        delay: delay});
+                if (hasPercent) {
+                    Tweener.addTween(deptLabel, {alpha: 1,
+                                                 time: .5,
+                                                 transition: "easeInOutQuad",
+                                                 delay: delay});
+                } else {
+                    Tweener.addTween(deptLabel, {alpha: 0,
+                                                 time: .5,
+                                                 transition: "easeInOutQuad",
+                                                 delay: delay});
+                }
+            }
+
+            /***********************************
+             ** PROTECTED
+             ***********************************/
+            override protected function updateDisplayList(uw:Number, uh:Number):void {
+                super.updateDisplayList(uw, uh);
+
+                // Position label based upon rotation
+                if ((rotation + 360)%360 > 90 && (rotation + 360)%360 < 270) {
+                    deptLabel.rotation = 180;
+                    deptLabel.x = width - _lengthExtension + deptLabel.textWidth + 
+                        2 * _labelBuffer;
+                    deptLabel.y = deptLabel.textHeight;
+                } else {
+                    deptLabel.rotation = 0;
+                    deptLabel.x = width - _lengthExtension + _labelBuffer;
+                    deptLabel.y = 0;
+                }
+            }
+
+
+            /***********************************
+             ** PRIVATE
+             ***********************************/
+            private function setLabelGap(obj:Object, g:Number, 
+                                         params:Array = null, info:Object = null):void {
+                obj._labelBuffer = g;
+                obj.invalidateDisplayList();
+            }
+            private function getLabelGap(obj:Object, params:Array = null, 
+                                         info:Object = null):Number{
+                return obj._labelBuffer;
+            }
+
+            private function setLengthExtension(obj:Object, g:Number, 
+                                                params:Array = null, info:Object = null):void {
+                obj._lengthExtension = g;
+                obj.invalidateDisplayList();
+            }
+            private function getLengthExtension(obj:Object, params:Array = null, 
+                                                info:Object = null):Number{
+                return obj._lengthExtension;
+            }
+        ]]>
+    </mx:Script>
+
+
+    <mx:Canvas width="100%" height="1" backgroundColor="0x222222"/>
+    <mx:Label id="deptLabel" fontFamily="bentonMedium"
+              color="0xBABABA" fontSize="9" fontSharpness="100"
+              selectable="false" fontAntiAliasType="advanced"/>
+</mx:Canvas>

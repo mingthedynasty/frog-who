@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+           creationComplete="onComplete()">
+	
+    <mx:Script>
+        <![CDATA[
+
+            import flash.events.MouseEvent;
+
+            import viz.data.ApplicationDataModel;
+
+
+            /***********************************
+             ** VARIABLES
+             ***********************************/
+            private static const DEFAULT_TEXT:String = "Search";
+
+
+            /***********************************
+             ** CONSTRUCTOR
+             ***********************************/
+            private function onComplete():void {
+                closeButton.graphics.lineStyle(1,0x444444);
+                closeButton.graphics.moveTo(2, 8);
+                closeButton.graphics.lineTo(7, 13);
+                closeButton.graphics.moveTo(7, 8);
+                closeButton.graphics.lineTo(2, 13);
+            }
+
+
+            /***********************************
+             ** GETTERS/SETTERS
+             ***********************************/
+
+            /***********************************
+             ** PUBLIC
+             ***********************************/
+
+            /***********************************
+             ** PRIVATE
+             ***********************************/
+            private function onSearchTermChange(e:Event):void {
+
+                if (input.text != DEFAULT_TEXT) {
+                    ApplicationDataModel.getInstance().searchTerm = 
+                        input.text.toUpperCase();
+                }
+            }
+
+            //-----------
+            private function onFocus(e:Event):void {
+                if (input.text == DEFAULT_TEXT) {
+                    input.text = "";
+                }
+                stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownStage);
+            }
+            private function onFocusOut(e:Event):void {
+                if (input.text == "") {
+                    input.text = DEFAULT_TEXT;
+                }
+            }
+
+            //-----------
+            private function onMouseDownStage(e:MouseEvent):void {
+                if (!hitTestPoint(stage.mouseX, stage.mouseY)) {
+                    stage.focus = null;
+                    stage.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDownStage);
+                }
+            }
+
+            //-----------
+            private function onClearClick(e:MouseEvent):void {
+                input.text = DEFAULT_TEXT;
+                stage.focus = null;
+
+                ApplicationDataModel.getInstance().searchTerm = "";
+            }
+
+
+        ]]>
+    </mx:Script>
+
+    <mx:TextInput id="input" width="100%"
+                  backgroundColor="0x000000"
+                  borderColor="0x444444"
+                  borderStyle="solid"
+                  focusAlpha="0"
+                  fontSize="11"
+                  fontAntiAliasType="advanced"
+                  fontFamily="benton"
+                  color="{input.text == DEFAULT_TEXT ? 0x666666 : 0xAAAAAA}"
+                  text="Search"
+                  change="onSearchTermChange(event)"
+                  focusIn="onFocus(event)"
+                  focusOut="onFocusOut(event)"/>
+
+    <mx:Canvas id="closeButton"
+               width="15" height="100%" right="0"
+               buttonMode="true"
+               click="onClearClick(event)"
+               visible="{input.text != DEFAULT_TEXT}"/>
+
+
+</mx:Canvas>
+

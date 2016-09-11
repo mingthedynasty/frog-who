@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+           xmlns:framework="viz.framework.*" 
+           creationComplete="onComplete()"
+           visible="false">
+
+    <mx:Script>
+        <![CDATA[
+
+            import flash.events.Event;
+            import flash.geom.Point;
+
+            import mx.collections.XMLListCollection;
+            import mx.core.UIComponent;
+            import mx.events.FlexEvent;
+            import mx.events.ItemClickEvent;
+
+            import caurina.transitions.Tweener;
+
+            import viz.AssetManager;
+            import viz.data.ApplicationDataModel;
+            import viz.events.SelectStudioEvent;
+            import viz.framework.AlphaRadioButton;
+
+            
+            /***********************************
+             ** VARIABLES
+             ***********************************/
+            private var _radiusInfo:Array;
+
+
+            /***********************************
+             ** CONSTRUCTOR
+             ***********************************/
+            private function onComplete():void {
+                ApplicationDataModel.getInstance().addEventListener(ApplicationDataModel.DATA_READY,
+                                                                    onDataReady);
+                ApplicationDataModel.getInstance().addEventListener(SelectStudioEvent.SELECT_STUDIO,
+                                                                    onSelectStudio);
+            }
+
+
+            /***********************************
+             ** GETTERS/SETTERS
+             ***********************************/
+            public function set radiusInfo(rads:Array):void {
+                _radiusInfo = rads;
+            }
+
+            /***********************************
+             ** PUBLIC
+             ***********************************/
+            public function show(delay:Number):void {
+                Tweener.addTween(frog, {alpha: 1, 
+                                        time: 1,
+                                        delay: delay,
+                                        transition: "easeInOutCubic"});
+                var option:UIComponent;
+                for (var i:int = 0; i < options.length; i++) {
+                    option = options[i] as UIComponent;
+                    Tweener.removeTweens(option);
+                    Tweener.addTween(option, {alpha: .7, 
+                                              time: 1,
+                                              delay: delay + ((i + 1) * .05),
+                                              transition: "easeInOutCubic",
+                                              onStart: showOption,
+                                              onStartParams: [i],
+                                              onComplete: function():void { this.mouseEnabled = true;}});
+                }
+                visible = true;
+            }
+
+            private function showOption(opt:Number):void {
+
+                var option:UIComponent = options[opt] as UIComponent;
+                var radius:Number = _radiusInfo[opt];
+                var ny:Number = option.y + selector.y + option.height/2 - 1;
+                var angle:Number = Math.asin((y + ny)/radius);                
+
+                var line:Canvas = new Canvas();
+                line.setStyle("backgroundColor", 0x222222);
+                line.x = Math.cos(angle) * radius - x;
+                line.y = ny;
+                line.width = -line.x - 3;
+                line.height = 1;
+                line.alpha = 0;
+                lines.addChild(line);
+
+                Tweener.addTween(line, {alpha: 1, 
+                                        time: 1,
+                                        transition: "easeInOutCubic"});
+            }
+
+
+            /***********************************
+             ** PRIVATE
+             ***********************************/
+            private function onDataReady(e:Event):void {
+                studios.dataProvider = 
+                    ApplicationDataModel.getInstance().studioData;
+            }
+
+
+            private function onSelectStudio(e:SelectStudioEvent):void {
+                var hasSelection:Boolean = 
+                    e.studioCode != SelectStudioEvent.NO_STUDIO_SELECTED;
+
+                for (var i:int = 0; i < options.length; i++) {
+                    options[i].setStyle("upAlpha", hasSelection ? .3 : .7);
+                    options[i].setStyle("overAlpha", hasSelection ? 1 : .9);                    
+                    options[i].setStyle("selectedAlpha", hasSelection ? 1 : .9);
+                }
+                if (hasSelection) {
+                    Tweener.addTween(lines, {alpha: 0, 
+                                             time: .4});
+                } else {
+                    Tweener.addTween(lines, {alpha: 1, 
+                                             time: 1,
+                                             delay: .5,
+                                             transition: "easeInOutQuad"});
+                }
+                frog.mouseEnabled = hasSelection;
+
+                if (hasSelection) {
+                    onFrogOut();
+                } else {
+                    optionsGroup.selection = null;
+                }
+            }
+
+            //-----------
+            private function onStudioClick(e:ItemClickEvent):void {
+                var selected:AlphaRadioButton = options[e.index] as AlphaRadioButton;
+                ApplicationDataModel.getInstance().selectedStudio = selected.data.code;
+            }
+
+            private function onFrogClick():void {
+                ApplicationDataModel.getInstance().selectedStudio = 
+                    SelectStudioEvent.NO_STUDIO_SELECTED;
+            }
+            
+            private function onFrogOver():void {
+                Tweener.addTween(frog, {alpha: 1, time: 1});
+            }
+
+            private function onFrogOut():void {
+                if (frog.mouseEnabled) {
+                    Tweener.addTween(frog, {alpha: .5, time: 1});
+                } else {
+                    Tweener.addTween(frog, {alpha: 1, time: 1});
+                }
+            }
+
+        ]]>
+    </mx:Script>
+
+    <mx:VBox verticalGap="0">
+        <mx:Image id="frog" source="{AssetManager.FROG_LOGO}" buttonMode="true"
+                  click="onFrogClick()" mouseOver="onFrogOver()"
+                  mouseOut="onFrogOut()"
+                  mouseEnabled="false" alpha="0"/>
+        <mx:VBox id="selector" verticalGap="-3">
+            <mx:RadioButtonGroup id="optionsGroup" itemClick="onStudioClick(event)"/>
+            <mx:Repeater id="studios">
+                <framework:AlphaRadioButton id="options" alpha="0"
+                                            groupName="optionsGroup" 
+                                            label="{XML(studios.currentItem).display.toUpperCase()}"
+                                            data="{studios.currentItem}"
+                                            mouseEnabled="false"/>
+            </mx:Repeater>
+        </mx:VBox>
+    </mx:VBox>
+    <mx:Canvas id="lines" clipContent="false"/>
+
+</mx:Canvas>
+

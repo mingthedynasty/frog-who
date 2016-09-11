@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" 
+                xmlns:views="viz.views.*"
+                xmlns:framework="viz.framework.*"
+                backgroundGradientAlphas="[1.0, 1.0]"
+                backgroundGradientColors="[0x000000, 0x000000]"
+                layout="absolute" 
+                creationComplete="onComplete()">
+
+    <mx:Script>
+        <![CDATA[
+
+
+            import mx.collections.XMLListCollection;
+            import mx.rpc.events.ResultEvent;
+
+            import viz.AssetManager;
+            import viz.data.DataService;
+            import viz.data.ApplicationDataModel;
+            import viz.views.DepartmentDividers;
+            import viz.views.Studio;
+            
+
+            /***********************************
+             ** VARIABLES
+             ***********************************/
+            public static const MAX_STUDIO_RADIUS:Number = 300;
+
+
+            /***********************************
+             ** CONSTRUCTOR
+             ***********************************/
+            private function onComplete():void {
+                ApplicationDataModel.getInstance().addEventListener(ApplicationDataModel.DATA_READY,
+                                                                    onDataReady);
+
+                var service:DataService = DataService.getInstance();
+                service.doRequest("data/who.xml", onFrogData);
+                service.doRequest("data/studios.xml", onStudioData);
+                service.doRequest("data/departments.xml", onDepartmentData);
+            }
+
+
+            /***********************************
+             ** PUBLIC
+             ***********************************/
+
+            /***********************************
+             ** PRIVATE
+             ***********************************/
+            private function onFrogData(e:ResultEvent):void {
+                var model:ApplicationDataModel = ApplicationDataModel.getInstance();
+                model.frogData = new XMLListCollection((e.result as XML).frog);
+            }
+            private function onStudioData(e:ResultEvent):void {
+                var model:ApplicationDataModel = ApplicationDataModel.getInstance();
+                model.studioData = new XMLListCollection((e.result as XML).studio);
+            }
+            private function onDepartmentData(e:ResultEvent):void {
+                var model:ApplicationDataModel = ApplicationDataModel.getInstance();
+                model.departmentData = new XMLListCollection((e.result as XML).department);
+            }
+
+            //-----------
+            private function onDataReady(e:Event = null):void {
+                // Add studios
+                var studioData:XMLListCollection = 
+                    ApplicationDataModel.getInstance().studioData;
+                var count:Number = 0;
+                var rads:Array = [];
+                for each (var studioXML:XML in studioData) {
+                //for (var i:int = 8; i < 9; i++) {
+                    //var studioXML:XML = studioData[i];
+                    var studio:Studio = new Studio();
+                    studios.rawChildren.addChild(studio);
+                    studio.data = studioXML;
+                    studio.show((studioData.length - 1 - count) * .3 * 
+                                studio.radius/MAX_STUDIO_RADIUS);
+                    rads.push(studio.radius);
+                    count++;
+                }
+
+                // Init selector
+                studioSelector.radiusInfo = rads;
+                studioSelector.show(studioData.length * .3 + 1.2);
+            }
+
+        ]]>
+    </mx:Script>
+
+
+    <mx:Box width="100%" height="100%"
+            verticalAlign="middle" horizontalAlign="center">
+        <mx:Canvas clipContent="false" width="0" height="0">
+            <views:StudioSelector id="studioSelector" 
+                                  x="{MAX_STUDIO_RADIUS + 60}"
+                                  y="{-studioSelector.height}"/>
+            <views:DepartmentDividers id="dividers"/>
+            <mx:Canvas id="studios" clipContent="false" width="0" height="0"/>
+            <mx:Canvas id="infoBoxes" clipContent="false" width="0" height="0"
+                       mouseEnabled="false"/>
+        </mx:Canvas>
+    </mx:Box>
+
+    <views:SearchTermInput top="10" right="10" width="130"/>
+
+</mx:Application>
